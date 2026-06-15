@@ -167,7 +167,7 @@
             </label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="skip-players-low-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
-              <span><strong>Skip All Rules (Automatic Positive)</strong> if Pool &lt; 0.35 SOL &amp; Players ≥ 7</span>
+              <span><strong>Skip All Rules (Automatic Positive)</strong> if Pool &lt; <input type="number" id="skip-val-pool" value="0.35" step="0.01" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"> SOL &amp; Players ≥ <input type="number" id="skip-val-players" value="7" step="1" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"></span>
             </label>
             <div style="font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <span style="display: flex; align-items: center; gap: 10px;">🎯 <strong>Target Cashout Multiplier:</strong> <input type="number" id="val-cashout" value="2.50" step="0.01" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()">x</span>
@@ -397,6 +397,9 @@ function loadSettings() {
       if (s.val_pool !== undefined) document.getElementById('val-pool').value = s.val_pool;
       if (s.val_cashout !== undefined) document.getElementById('val-cashout').value = s.val_cashout;
       
+      if (s.skip_val_pool !== undefined) document.getElementById('skip-val-pool').value = s.skip_val_pool;
+      if (s.skip_val_players !== undefined) document.getElementById('skip-val-players').value = s.skip_val_players;
+      
       updateScript();
     })
     .catch(function(){ updateScript(); });
@@ -411,7 +414,9 @@ function saveSettings() {
     val_prev:    document.getElementById('val-prev').value,
     val_players: document.getElementById('val-players').value,
     val_pool:    document.getElementById('val-pool').value,
-    val_cashout: document.getElementById('val-cashout').value
+    val_cashout: document.getElementById('val-cashout').value,
+    skip_val_pool: document.getElementById('skip-val-pool').value,
+    skip_val_players: document.getElementById('skip-val-players').value
   };
   fetch('/api/settings', {
     method: 'POST',
@@ -433,6 +438,8 @@ function updateScript() {
   var valPlayers = document.getElementById('val-players').value || "14";
   var valPool = document.getElementById('val-pool').value || "0.80";
   var valCashout = document.getElementById('val-cashout').value || "2.50";
+  var skipValPool = document.getElementById('skip-val-pool').value || "0.35";
+  var skipValPlayers = document.getElementById('skip-val-players').value || "7";
 
   saveSettings();
 
@@ -451,6 +458,7 @@ function updateScript() {
   SCRIPT_TEXT = '(function(){\n'
     + '  if(window.__advRunning){clearInterval(window.__advRunning);delete window.__advRunning;}\n'
     + '  var PREV_MAX=' + valPrev + ',MIN_P=' + valPlayers + ',MIN_SOL=' + valPool + ',CASHOUT=' + valCashout + ';\n'
+    + '  var SKIP_VAL_POOL=' + skipValPool + ',SKIP_VAL_P=' + skipValPlayers + ';\n'
     + '  var USE_PREV=' + usePrev + ', USE_PLAYERS=' + usePlayers + ', USE_POOL=' + usePool + ', SKIP_P_LOW_POOL=' + skipPlayersLowPool + ';\n'
     + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0;\n'
     + '\n'
@@ -489,9 +497,9 @@ function updateScript() {
     + '  }\n'
     + '\n'
     + '  function render(){\n'
-    + '    var pSkipped = USE_PLAYERS && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
-    + '    var poolSkipped = USE_POOL && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
-    + '    var prevSkipped = USE_PREV && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
+    + '    var pSkipped = USE_PLAYERS && SKIP_P_LOW_POOL && curSOL<SKIP_VAL_POOL && curP>=SKIP_VAL_P;\n'
+    + '    var poolSkipped = USE_POOL && SKIP_P_LOW_POOL && curSOL<SKIP_VAL_POOL && curP>=SKIP_VAL_P;\n'
+    + '    var prevSkipped = USE_PREV && SKIP_P_LOW_POOL && curSOL<SKIP_VAL_POOL && curP>=SKIP_VAL_P;\n'
     + '    var r1=USE_PREV ? (prevSkipped ? true : (prevMult!==null&&prevMult<=PREV_MAX)) : true;\n'
     + '    var r2=USE_PLAYERS ? (pSkipped ? true : curP>=MIN_P) : true;\n'
     + '    var r3=USE_POOL ? (poolSkipped ? true : curSOL>=MIN_SOL) : true;\n'
@@ -511,15 +519,15 @@ function updateScript() {
     + '      if(sig.dataset.last==="BET"){sigs--;if(sigs<0)sigs=0;g("__asn").textContent=sigs;}\n'
     + '      sig.dataset.last="WAIT";\n'
     + '    }\n'
-    + '    if(!USE_PREV){ g("__r1").textContent="➖ Prev: Ignored"; g("__r1").style.color="#ffffff"; } else if(prevSkipped){ g("__r1").textContent="➖ Prev: Skipped (<0.35 SOL & P≥7)"; g("__r1").style.color="#ffffff"; } else {\n'
-    + '      g("__r1").textContent=prevMult===null?"\u23F3 Prev crash: waiting...":(r1?"\u2705":"\u274C")+" Prev: "+prevMult.toFixed(2)+"x "+(r1?"\u2264":">")+" 1.80x";\n'
+    + '    if(!USE_PREV){ g("__r1").textContent="➖ Prev: Ignored"; g("__r1").style.color="#ffffff"; } else if(prevSkipped){ g("__r1").textContent="➖ Prev: Skipped (<"+SKIP_VAL_POOL+" SOL & P≥"+SKIP_VAL_P+")"; g("__r1").style.color="#ffffff"; } else {\n'
+    + '      g("__r1").textContent=prevMult===null?"\u23F3 Prev crash: waiting...":(r1?"\u2705":"\u274C")+" Prev: "+prevMult.toFixed(2)+"x "+(r1?"\u2264":">")+" "+PREV_MAX+"x";\n'
     + '      g("__r1").style.color=prevMult===null?"#ffffff":r1?"#22d3a5":"#f43f5e";\n'
     + '    }\n'
-    + '    if(!USE_PLAYERS){ g("__r2").textContent="➖ Players: Ignored"; g("__r2").style.color="#ffffff"; } else if(pSkipped){ g("__r2").textContent="➖ Players: Skipped (<0.35 SOL & P≥7)"; g("__r2").style.color="#ffffff"; } else {\n'
+    + '    if(!USE_PLAYERS){ g("__r2").textContent="➖ Players: Ignored"; g("__r2").style.color="#ffffff"; } else if(pSkipped){ g("__r2").textContent="➖ Players: Skipped (<"+SKIP_VAL_POOL+" SOL & P≥"+SKIP_VAL_P+")"; g("__r2").style.color="#ffffff"; } else {\n'
     + '      g("__r2").textContent=(r2?"✅":"❌")+" Players: "+curP+(r2?" ≥ ":" < ")+MIN_P;\n'
     + '      g("__r2").style.color=r2?"#22d3a5":"#f43f5e";\n'
     + '    }\n'
-    + '    if(!USE_POOL){ g("__r3").textContent="➖ Pool: Ignored"; g("__r3").style.color="#ffffff"; } else if(poolSkipped){ g("__r3").textContent="➖ Pool: Skipped (<0.35 SOL & P≥7)"; g("__r3").style.color="#ffffff"; } else {\n'
+    + '    if(!USE_POOL){ g("__r3").textContent="➖ Pool: Ignored"; g("__r3").style.color="#ffffff"; } else if(poolSkipped){ g("__r3").textContent="➖ Pool: Skipped (<"+SKIP_VAL_POOL+" SOL & P≥"+SKIP_VAL_P+")"; g("__r3").style.color="#ffffff"; } else {\n'
     + '      g("__r3").textContent=(r3?"✅":"❌")+" Pool: "+curSOL.toFixed(3)+" SOL "+(r3?"≥":"<")+" "+MIN_SOL;\n'
     + '      g("__r3").style.color=r3?"#22d3a5":"#f43f5e";\n'
     + '    }\n'
@@ -558,9 +566,9 @@ function updateScript() {
     + '    if(sAmount!==null){curSOL=sAmount;if(curSOL>maxSOL)maxSOL=curSOL;}\n'
     + '    if(lCrash!==null&&prevMult!==lCrash){\n'
     + '      if(prevMult!==null){\n'
-    + '        var pSkippedB = USE_PLAYERS && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
-    + '        var poolSkippedB = USE_POOL && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
-    + '        var prevSkippedB = USE_PREV && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
+    + '        var pSkippedB = USE_PLAYERS && SKIP_P_LOW_POOL && maxSOL<SKIP_VAL_POOL && maxP>=SKIP_VAL_P;\n'
+    + '        var poolSkippedB = USE_POOL && SKIP_P_LOW_POOL && maxSOL<SKIP_VAL_POOL && maxP>=SKIP_VAL_P;\n'
+    + '        var prevSkippedB = USE_PREV && SKIP_P_LOW_POOL && maxSOL<SKIP_VAL_POOL && maxP>=SKIP_VAL_P;\n'
     + '        var r1b=USE_PREV ? (prevSkippedB ? true : (prevMult<=PREV_MAX)) : true;\n'
     + '        var r2b=USE_PLAYERS ? (pSkippedB ? true : maxP>=MIN_P) : true;\n'
     + '        var r3b=USE_POOL ? (poolSkippedB ? true : maxSOL>=MIN_SOL) : true;\n'
