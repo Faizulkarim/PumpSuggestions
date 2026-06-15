@@ -4,8 +4,9 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-import sqlite3
 import os
+import psycopg2
+import psycopg2.extras
 from datetime import datetime
 
 app = FastAPI(title="Win Suggestion")
@@ -34,36 +35,30 @@ class SignalData(BaseModel):
     success: bool
     overall_cashout: float = 0.0
 
-# On Vercel, only /tmp is writable. Locally, use project directory.
-DB_FILE = "/tmp/history.db" if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "history.db")
+# --- Database connection ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_conn()
     cursor = conn.cursor()
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS signals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             timestamp TEXT,
             prev_crash REAL,
             players INTEGER,
             pool_sol REAL,
             signal TEXT,
             actual_crash REAL,
-            success BOOLEAN
+            success BOOLEAN,
+            overall_cashout REAL DEFAULT 0,
+            system_pnl REAL DEFAULT 0
         )
     ''')
-    # Dynamic migration to add overall_cashout column if it doesn't exist
-    try:
-        cursor.execute('ALTER TABLE signals ADD COLUMN overall_cashout REAL DEFAULT 0')
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
-    
-    try:
-        cursor.execute('ALTER TABLE signals ADD COLUMN system_pnl REAL DEFAULT 0')
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS settings (
@@ -71,6 +66,7 @@ def init_db():
             value TEXT
         )
     ''')
+
     # Insert defaults if not exists
     defaults = [
         ('req_prev', '1'),
@@ -79,8 +75,13 @@ def init_db():
         ('skip_low_pool', '1'),
     ]
     for k, v in defaults:
-        cursor.execute('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', (k, v))
+        cursor.execute(
+            'INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING',
+            (k, v)
+        )
+
     conn.commit()
+    cursor.close()
     conn.close()
 
 # Initialize Database on startup
@@ -88,16 +89,15 @@ init_db()
 
 @app.post("/api/record")
 async def record_signal(data: SignalData):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_conn()
     cursor = conn.cursor()
-    
+
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
     system_pnl = data.pool_sol - data.overall_cashout
-    
+
     cursor.execute('''
         INSERT INTO signals (timestamp, prev_crash, players, pool_sol, signal, actual_crash, success, overall_cashout, system_pnl)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         timestamp,
         data.prev_crash,
@@ -109,48 +109,54 @@ async def record_signal(data: SignalData):
         data.overall_cashout,
         system_pnl
     ))
-    
+
     conn.commit()
+    cursor.close()
     conn.close()
-    
+
     return {"status": "recorded"}
 
 @app.get("/api/history")
 async def get_history():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute('SELECT * FROM signals ORDER BY id DESC LIMIT 100000')
     rows = cursor.fetchall()
+    cursor.close()
     conn.close()
     return [dict(row) for row in rows]
 
 @app.post("/api/history/clear")
 async def clear_history():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_conn()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM signals')
     conn.commit()
+    cursor.close()
     conn.close()
     return {"status": "cleared"}
 
 @app.get("/api/settings")
 async def get_settings():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute('SELECT key, value FROM settings')
     rows = cursor.fetchall()
+    cursor.close()
     conn.close()
     return {row['key']: row['value'] for row in rows}
 
 @app.post("/api/settings")
 async def save_settings(data: dict):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_conn()
     cursor = conn.cursor()
     for k, v in data.items():
-        cursor.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (k, str(v)))
+        cursor.execute(
+            'INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+            (k, str(v))
+        )
     conn.commit()
+    cursor.close()
     conn.close()
     return {"status": "saved"}
 
