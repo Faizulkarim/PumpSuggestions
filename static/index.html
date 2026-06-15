@@ -139,7 +139,8 @@
         <div class="rule-card" id="card-players"><div class="ri">👥</div><div class="rt">Players</div><div class="rv">≥ 14</div><div class="rd">At least 14 players betting</div></div>
         <div class="rule-card" id="card-pool"><div class="ri">💰</div><div class="rt">Bet Pool</div><div class="rv">≥ 0.80 SOL</div><div class="rd">Total pool this round</div></div>
       </div>
-      <div class="ev-note">📊 Derived from <strong style="color:var(--text)">191 live rounds</strong> — <strong style="color:#22d3a5">+42.86% EV</strong> at <strong style="color:#22d3a5">2.50x cashout</strong> · Win Rate <strong style="color:#22d3a5">57.1%</strong></div>
+      </div>
+      <div class="ev-note">📊 Modify your custom targets in the <strong>Settings</strong> tab.</div>
     </div>
   </div>
 
@@ -154,20 +155,23 @@
           <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="req-prev" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
-              <span><strong>Previous Crash</strong> ≤ 1.80x</span>
+              <span><strong>Previous Crash</strong> ≤ <input type="number" id="val-prev" value="1.80" step="0.01" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()">x</span>
             </label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="req-players" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
-              <span><strong>Minimum Players</strong> ≥ 14</span>
+              <span><strong>Minimum Players</strong> ≥ <input type="number" id="val-players" value="14" step="1" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"></span>
             </label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="req-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
-              <span><strong>Minimum Pool</strong> ≥ 0.80 SOL</span>
+              <span><strong>Minimum Pool</strong> ≥ <input type="number" id="val-pool" value="0.80" step="0.01" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"> SOL</span>
             </label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="skip-players-low-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
               <span><strong>Skip All Rules (Automatic Positive)</strong> if Pool &lt; 0.35 SOL &amp; Players ≥ 7</span>
             </label>
+            <div style="font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+              <span style="display: flex; align-items: center; gap: 10px;">🎯 <strong>Target Cashout Multiplier:</strong> <input type="number" id="val-cashout" value="2.50" step="0.01" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()">x</span>
+            </div>
           </div>
           <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">Changes are applied automatically to the copied Advisor Script. Unchecking a rule means it will be ignored.</p>
         </div>
@@ -387,6 +391,12 @@ function loadSettings() {
       if (s.req_players !== undefined)  document.getElementById('req-players').checked = s.req_players === '1';
       if (s.req_pool !== undefined)     document.getElementById('req-pool').checked = s.req_pool === '1';
       if (s.skip_low_pool !== undefined) document.getElementById('skip-players-low-pool').checked = s.skip_low_pool === '1';
+      
+      if (s.val_prev !== undefined) document.getElementById('val-prev').value = s.val_prev;
+      if (s.val_players !== undefined) document.getElementById('val-players').value = s.val_players;
+      if (s.val_pool !== undefined) document.getElementById('val-pool').value = s.val_pool;
+      if (s.val_cashout !== undefined) document.getElementById('val-cashout').value = s.val_cashout;
+      
       updateScript();
     })
     .catch(function(){ updateScript(); });
@@ -397,7 +407,11 @@ function saveSettings() {
     req_prev:    document.getElementById('req-prev').checked ? '1' : '0',
     req_players: document.getElementById('req-players').checked ? '1' : '0',
     req_pool:    document.getElementById('req-pool').checked ? '1' : '0',
-    skip_low_pool: document.getElementById('skip-players-low-pool').checked ? '1' : '0'
+    skip_low_pool: document.getElementById('skip-players-low-pool').checked ? '1' : '0',
+    val_prev:    document.getElementById('val-prev').value,
+    val_players: document.getElementById('val-players').value,
+    val_pool:    document.getElementById('val-pool').value,
+    val_cashout: document.getElementById('val-cashout').value
   };
   fetch('/api/settings', {
     method: 'POST',
@@ -415,7 +429,20 @@ function updateScript() {
   var usePool = document.getElementById('req-pool').checked;
   var skipPlayersLowPool = document.getElementById('skip-players-low-pool').checked;
 
+  var valPrev = document.getElementById('val-prev').value || "1.80";
+  var valPlayers = document.getElementById('val-players').value || "14";
+  var valPool = document.getElementById('val-pool').value || "0.80";
+  var valCashout = document.getElementById('val-cashout').value || "2.50";
+
   saveSettings();
+
+  // Update UI text to match the new dynamic values
+  document.querySelector('.step-body p strong[style="color:#22d3a5"]').textContent = valCashout + 'x';
+  document.querySelector('.fake-card.bet .fc-hint').innerHTML = '🎯 Cashout at ' + valCashout + 'x';
+  
+  document.getElementById('card-prev').querySelector('.rv').textContent = '≤ ' + valPrev + 'x';
+  document.getElementById('card-players').querySelector('.rv').textContent = '≥ ' + valPlayers;
+  document.getElementById('card-pool').querySelector('.rv').textContent = '≥ ' + valPool + ' SOL';
 
   document.getElementById('card-prev').style.opacity = usePrev ? '1' : '0.3';
   document.getElementById('card-players').style.opacity = usePlayers ? '1' : '0.3';
@@ -423,7 +450,7 @@ function updateScript() {
 
   SCRIPT_TEXT = '(function(){\n'
     + '  if(window.__advRunning){clearInterval(window.__advRunning);delete window.__advRunning;}\n'
-    + '  var PREV_MAX=1.80,MIN_P=14,MIN_SOL=0.80,CASHOUT=2.50;\n'
+    + '  var PREV_MAX=' + valPrev + ',MIN_P=' + valPlayers + ',MIN_SOL=' + valPool + ',CASHOUT=' + valCashout + ';\n'
     + '  var USE_PREV=' + usePrev + ', USE_PLAYERS=' + usePlayers + ', USE_POOL=' + usePool + ', SKIP_P_LOW_POOL=' + skipPlayersLowPool + ';\n'
     + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0;\n'
     + '\n'
