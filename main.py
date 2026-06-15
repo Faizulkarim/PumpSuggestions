@@ -10,6 +10,10 @@ from datetime import datetime
 
 app = FastAPI(title="Win Suggestion")
 
+# Resolve paths relative to this file (works locally and on Vercel)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 # Allow CORS since the script makes a fetch from solpump.io
 app.add_middleware(
     CORSMiddleware,
@@ -19,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 class SignalData(BaseModel):
     prev_crash: float
@@ -30,7 +34,8 @@ class SignalData(BaseModel):
     success: bool
     overall_cashout: float = 0.0
 
-DB_FILE = "history.db"
+# On Vercel, only /tmp is writable. Locally, use project directory.
+DB_FILE = "/tmp/history.db" if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "history.db")
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -151,7 +156,7 @@ async def save_settings(data: dict):
 
 @app.get("/")
 async def index():
-    return FileResponse("static/index.html")
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
