@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Win Suggestion — Solpump Crash Advisor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#07080f;--s:#0d0f1e;--s2:#131628;--b:rgba(255,255,255,0.07);--acc:#7c3aed;--acc2:#a855f7;--green:#22d3a5;--red:#f43f5e;--yellow:#fbbf24;--text:#e2e8f0;--muted:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+    body::before{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:500px;background:radial-gradient(ellipse,rgba(124,58,237,.22) 0%,transparent 70%);pointer-events:none;z-index:0;}
+    .app{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 16px 80px;}
+    header{display:flex;align-items:center;justify-content:space-between;padding-bottom:28px;border-bottom:1px solid var(--b);margin-bottom:24px;}
+    .logo{display:flex;align-items:center;gap:14px;}
+    .logo-icon{width:46px;height:46px;background:linear-gradient(135deg,var(--acc),var(--acc2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 24px rgba(124,58,237,.45);}
+    .logo h1{font-size:22px;font-weight:900;letter-spacing:-.6px;background:linear-gradient(135deg,#fff 35%,var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .logo p{font-size:11px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-top:2px;}
+    .version{padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.1);color:var(--acc2);}
+    .tabs{display:flex;gap:0;margin-bottom:32px;border-bottom:1px solid var(--b);}
+    .tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:14px;font-weight:700;padding:12px 28px;cursor:pointer;transition:all .2s;font-family:inherit;margin-bottom:-1px;}
+    .tab-btn:hover{color:var(--text);}
+    .tab-btn.active{color:var(--acc2);border-bottom-color:var(--acc2);}
+    .tab-pane{display:none;}
+    .tab-pane.active{display:block;}
+    .steps{display:flex;flex-direction:column;gap:20px;margin-bottom:36px;}
+    .step{display:flex;gap:20px;align-items:flex-start;background:var(--s);border:1px solid var(--b);border-radius:16px;padding:24px;}
+    .step-num{min-width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;box-shadow:0 0 16px rgba(124,58,237,.4);flex-shrink:0;}
+    .step-body h3{font-size:15px;font-weight:700;margin-bottom:6px;}
+    .step-body p{font-size:13px;color:var(--muted);line-height:1.7;}
+    .step-body p a{color:var(--acc2);text-decoration:none;font-weight:600;}
+    .script-box{background:#0a0b16;border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:20px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#c4b5fd;line-height:1.7;white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto;}
+    .copy-btn{display:flex;align-items:center;gap:10px;margin-top:12px;padding:13px 22px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;width:100%;justify-content:center;transition:opacity .2s,transform .15s;box-shadow:0 4px 20px rgba(124,58,237,.4);}
+    .copy-btn:hover{opacity:.9;transform:translateY(-1px);}
+    .copy-btn.copied{background:linear-gradient(135deg,#059669,var(--green));}
+    .preview{background:var(--s);border:1px solid var(--b);border-radius:16px;padding:28px;margin-bottom:36px;}
+    .preview-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+    .preview-title::after{content:'';flex:1;height:1px;background:var(--b);}
+    .fake-signal-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .fake-card{border-radius:14px;padding:24px;text-align:center;}
+    .fake-card.wait{background:var(--s2);border:1px solid var(--b);}
+    .fake-card.bet{background:linear-gradient(145deg,#0d1f1a,#0e1020);border:1px solid rgba(34,211,165,.4);box-shadow:0 0 40px rgba(34,211,165,.1);}
+    .fc-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+    .fc-val{font-size:48px;font-weight:900;letter-spacing:-2px;line-height:1;}
+    .fake-card.wait .fc-val{color:var(--muted);}
+    .fake-card.bet .fc-val{color:var(--green);text-shadow:0 0 30px rgba(34,211,165,.5);}
+    .fc-hint{font-size:12px;margin-top:8px;}
+    .fake-card.wait .fc-hint{color:var(--muted);}
+    .fake-card.bet .fc-hint{color:var(--green);font-weight:600;}
+    .rules{background:linear-gradient(135deg,#0b0d1e,#0f122c);border:1px solid rgba(124,58,237,.2);border-radius:16px;padding:28px;}
+    .rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;}
+    .rule-card{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.15);border-radius:12px;padding:20px;text-align:center;}
+    .ri{font-size:26px;margin-bottom:10px;}
+    .rt{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+    .rv{font-size:20px;font-weight:800;color:var(--acc2);font-family:'JetBrains Mono',monospace;}
+    .rd{font-size:10px;color:var(--muted);margin-top:4px;}
+    .ev-note{margin-top:16px;padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.15);border-radius:10px;font-size:12px;color:var(--muted);text-align:center;line-height:1.8;}
+    #toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-90px);background:var(--green);color:#000;font-weight:800;font-size:14px;padding:12px 28px;border-radius:999px;z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 4px 30px rgba(34,211,165,.4);}
+    #toast.show{transform:translateX(-50%) translateY(0);}
+    /* History */
+    .filter-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+    .flt{background:var(--s);border:1px solid var(--b);color:var(--muted);padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;}
+    .flt:hover{color:var(--text);}
+    .flt.active{background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.4);color:var(--acc2);}
+    .hist-wrap{background:var(--s);border:1px solid var(--b);border-radius:16px;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:#0a0c16;padding:14px 18px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--b);text-align:left;}
+    td{padding:14px 18px;border-bottom:1px solid var(--b);font-size:13px;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(255,255,255,.02);}
+    .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;}
+    .b-bet{background:rgba(34,211,165,.1);color:var(--green);border:1px solid rgba(34,211,165,.3);}
+    .b-wait{background:rgba(100,116,139,.1);color:var(--muted);border:1px solid rgba(100,116,139,.2);}
+    .win{color:var(--green);font-weight:700;}
+    .loss{color:var(--red);font-weight:700;}
+    .empty{padding:48px;text-align:center;color:var(--muted);font-size:14px;}
+    .flt:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
+    @media(max-width:640px){.fake-signal-row,.rules-grid{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div id="toast">✅ Script copied to clipboard!</div>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎯</div>
+      <div><h1>Win Suggestion</h1><p>Solpump Crash Advisor · v7</p></div>
+    </div>
+    <div class="version">EV: +42.86%</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tbtn-advisor" onclick="showTab('advisor')">📋 Advisor Script</button>
+    <button class="tab-btn" id="tbtn-settings" onclick="showTab('settings')">⚙️ Settings</button>
+    <button class="tab-btn" id="tbtn-history" onclick="showTab('history')">📊 Signal History</button>
+  </div>
+
+  <!-- ADVISOR TAB -->
+  <div id="tab-advisor" class="tab-pane active">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Open Solpump in another tab</h3>
+          <p>Go to <a href="https://solpump.io" target="_blank">solpump.io</a> and navigate to the <strong>Crash</strong> game.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Copy the script below &amp; paste into the Solpump console</h3>
+          <p>Click the button → switch to Solpump tab → <strong>F12</strong> → <strong>Console</strong> → <strong>Cmd+V</strong> → <strong>Enter</strong>.</p>
+          <div class="script-box" id="script-display">Loading script...</div>
+          <button class="copy-btn" id="copy-btn" onclick="doCopy()">📋 Copy Advisor Script to Clipboard</button>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Watch the Positive / WAIT signal</h3>
+          <p>The floating panel appears on Solpump. When it shows <strong style="color:#22d3a5">Positive</strong> — place a bet and cashout at <strong style="color:#22d3a5">2.50x</strong>. Every round is saved automatically to the database.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="preview-title">Signal Preview</div>
+      <div class="fake-signal-row">
+        <div class="fake-card wait"><div class="fc-label">Rules NOT met</div><div class="fc-val">WAIT</div><div class="fc-hint">⏳ Skip this round</div></div>
+        <div class="fake-card bet"><div class="fc-label">ALL 3 rules met</div><div class="fc-val">Positive</div><div class="fc-hint">🎯 Cashout at 2.50x</div></div>
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="preview-title">Entry Rules</div>
+      <div class="rules-grid">
+        <div class="rule-card" id="card-prev"><div class="ri">📉</div><div class="rt">Prev Crash</div><div class="rv">≤ 1.80x</div><div class="rd">Previous round crashed low</div></div>
+        <div class="rule-card" id="card-players"><div class="ri">👥</div><div class="rt">Players</div><div class="rv">≥ 14</div><div class="rd">At least 14 players betting</div></div>
+        <div class="rule-card" id="card-pool"><div class="ri">💰</div><div class="rt">Bet Pool</div><div class="rv">≥ 0.80 SOL</div><div class="rd">Total pool this round</div></div>
+      </div>
+      <div class="ev-note">📊 Derived from <strong style="color:var(--text)">191 live rounds</strong> — <strong style="color:#22d3a5">+42.86% EV</strong> at <strong style="color:#22d3a5">2.50x cashout</strong> · Win Rate <strong style="color:#22d3a5">57.1%</strong></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" class="tab-pane">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">⚙️</div>
+        <div class="step-body">
+          <h3>Algorithm Requirements</h3>
+          <p>Select which rules are mandatory for a Positive signal to be triggered.</p>
+          <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+              <input type="checkbox" id="req-prev" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
+              <span><strong>Previous Crash</strong> ≤ 1.80x</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+              <input type="checkbox" id="req-players" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
+              <span><strong>Minimum Players</strong> ≥ 14</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+              <input type="checkbox" id="req-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
+              <span><strong>Minimum Pool</strong> ≥ 0.80 SOL</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+              <input type="checkbox" id="skip-players-low-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
+              <span><strong>Skip All Rules (Automatic Positive)</strong> if Pool &lt; 0.35 SOL &amp; Players ≥ 7</span>
+            </label>
+          </div>
+          <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">Changes are applied automatically to the copied Advisor Script. Unchecking a rule means it will be ignored.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-pane">
+    <div class="filter-row" style="align-items: center;">
+      <button class="flt active" id="flt-all" onclick="applyFilter('all', this)">All Rounds</button>
+      <button class="flt" id="flt-win" onclick="applyFilter('win', this)">✅ Winning Positives</button>
+      <button class="flt" id="flt-loss" onclick="applyFilter('loss', this)">❌ Losing Positives</button>
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+        <div id="pnl-display" style="font-weight: 700; font-size: 13px; padding: 8px 16px; background: var(--s2); border: 1px solid var(--b); border-radius: 8px;">
+          PNL: <span id="pnl-value" style="color:var(--text)">0.00</span> U
+        </div>
+        <button class="flt" style="border-color:var(--acc2); color:var(--acc2)" onclick="exportCSV()">📥 Export CSV</button>
+        <button class="flt" style="border-color:var(--red); color:var(--red)" onclick="clearHistory()">🗑 Clear History</button>
+      </div>
+    </div>
+    <div class="hist-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Signal</th>
+            <th>Players</th>
+            <th>Current Crash</th>
+            <th>Prev Crash</th>
+            <th>Pool (SOL)</th>
+            <th>Overall Cashout</th>
+            <th>System PNL</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="hist-body">
+          <tr><td colspan="9" class="empty">Click "Signal History" tab to load data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-row" id="pagination-controls" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:20px;">
+      <button class="flt" id="btn-prev-page" onclick="changePage(-1)">◀ Previous</button>
+      <span id="page-indicator" style="font-size:13px; font-weight:600; color:var(--muted)">Page 1 of 1</span>
+      <button class="flt" id="btn-next-page" onclick="changePage(1)">Next ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tbtn-' + name).classList.add('active');
+  if (name === 'history') { loadHistory(); }
+}
+
+// ── History ────────────────────────────────────────────────────────────────
+var allRows = [];
+var curFilter = 'all';
+var currentPage = 1;
+var pageSize = 20;
+
+function applyFilter(f, btn) {
+  curFilter = f;
+  currentPage = 1;
+  document.querySelectorAll('.flt').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderTable();
+}
+
+function loadHistory() {
+  document.getElementById('hist-body').innerHTML = '<tr><td colspan="9" class="empty">Loading from database…</td></tr>';
+  fetch('/api/history')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      allRows = data;
+      currentPage = 1;
+      renderTable();
+    })
+    .catch(function(){
+      document.getElementById('hist-body').innerHTML = '<tr><td colspan="9" class="empty" style="color:var(--red)">⚠ Could not reach /api/history — is the server running?</td></tr>';
+    });
+}
+
+function changePage(dir) {
+  currentPage += dir;
+  renderTable();
+}
+
+function renderTable() {
+  var rows = allRows;
+  if (curFilter === 'win')  rows = allRows.filter(function(r){ return r.signal === 'BET' && r.success == 1; });
+  if (curFilter === 'loss') rows = allRows.filter(function(r){ return r.signal === 'BET' && r.success == 0; });
+
+  var pnl = 0;
+  for(var i=0; i<allRows.length; i++) {
+    if(allRows[i].signal === 'BET') {
+      if(allRows[i].success) pnl += 1.5;
+      else pnl -= 1.0;
+    }
+  }
+  var pnlEl = document.getElementById('pnl-value');
+  if(pnlEl) {
+    pnlEl.textContent = (pnl > 0 ? '+' : '') + pnl.toFixed(2);
+    pnlEl.style.color = pnl > 0 ? 'var(--green)' : (pnl < 0 ? 'var(--red)' : 'var(--text)');
+  }
+
+  var totalRows = rows.length;
+  var totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  var prevBtn = document.getElementById('btn-prev-page');
+  var nextBtn = document.getElementById('btn-next-page');
+  var indicator = document.getElementById('page-indicator');
+  
+  if (prevBtn && nextBtn && indicator) {
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+    indicator.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + totalRows + ' total)';
+  }
+
+  if (rows.length === 0) {
+    document.getElementById('hist-body').innerHTML = '<tr><td colspan="9" class="empty">No records yet — let the script run a few rounds!</td></tr>';
+    return;
+  }
+
+  var start = (currentPage - 1) * pageSize;
+  var end = start + pageSize;
+  var pageRows = rows.slice(start, end);
+
+  var html = '';
+  for (var i = 0; i < pageRows.length; i++) {
+    var r = pageRows[i];
+    var rowIndex = start + i + 1;
+    var sigHtml = r.signal === 'BET' ? '<span class="badge b-bet">Positive</span>' : '<span class="badge b-wait">SKIP</span>';
+    var payoutVal = r.overall_cashout;
+    var payoutHtml = (payoutVal && payoutVal > 0) ? '<span class="win">+' + payoutVal.toFixed(4) + ' SOL</span>' : '<span style="color:var(--muted)">-</span>';
+    var sysPnlVal = r.system_pnl || 0;
+    var sysPnlHtml = sysPnlVal > 0 ? '<span class="win">+' + sysPnlVal.toFixed(4) + ' SOL</span>' : (sysPnlVal < 0 ? '<span class="loss">' + sysPnlVal.toFixed(4) + ' SOL</span>' : '<span style="color:var(--muted)">0.0000 SOL</span>');
+    var crashHtml;
+    if (r.signal === 'BET') {
+      if (r.success) { crashHtml = '<span class="win">' + r.actual_crash.toFixed(2) + 'x ✅</span>'; }
+      else            { crashHtml = '<span class="loss">' + r.actual_crash.toFixed(2) + 'x ❌</span>'; }
+    } else {
+      crashHtml = '<span style="color:var(--muted)">' + r.actual_crash.toFixed(2) + 'x</span>';
+    }
+    var t = r.timestamp;
+    try { t = new Date(r.timestamp).toLocaleTimeString(); } catch(e){}
+
+    html += '<tr>'
+      + '<td style="color:var(--muted);font-weight:600">' + rowIndex + '</td>'
+      + '<td>' + sigHtml + '</td>'
+      + '<td>' + r.players + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace">' + crashHtml + '</td>'
+      + '<td style="color:var(--muted)">' + r.prev_crash.toFixed(2) + 'x</td>'
+      + '<td>' + r.pool_sol.toFixed(3) + ' SOL</td>'
+      + '<td style="font-weight:700">' + payoutHtml + '</td>'
+      + '<td style="font-weight:700">' + sysPnlHtml + '</td>'
+      + '<td style="color:var(--muted)">' + t + '</td>'
+      + '</tr>';
+  }
+  document.getElementById('hist-body').innerHTML = html;
+}
+
+function exportCSV() {
+  if (allRows.length === 0) return alert('No history to export!');
+  var csv = 'Index,Signal,Players,Current Crash,Prev Crash,Pool (SOL),Overall Cashout,System PNL,Time,Success\n';
+  var rows = allRows;
+  if (curFilter === 'win') rows = allRows.filter(function(r){ return r.signal === 'BET' && r.success == 1; });
+  if (curFilter === 'loss') rows = allRows.filter(function(r){ return r.signal === 'BET' && r.success == 0; });
+  
+  var idx = 1;
+  rows.forEach(function(r) {
+    csv += idx++ + ',';
+    csv += r.signal + ',';
+    csv += r.players + ',';
+    csv += r.actual_crash.toFixed(2) + ',';
+    csv += r.prev_crash.toFixed(2) + ',';
+    csv += r.pool_sol.toFixed(3) + ',';
+    csv += (r.overall_cashout ? r.overall_cashout.toFixed(4) : '0') + ',';
+    csv += (r.system_pnl ? r.system_pnl.toFixed(4) : '0') + ',';
+    csv += new Date(r.timestamp).toISOString() + ',';
+    csv += (r.success ? '1' : '0') + '\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = window.URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'solpump_history_' + curFilter + '.csv');
+  a.click();
+}
+
+function clearHistory() {
+  if (confirm('Are you sure you want to permanently clear all signal history from the database? This cannot be undone.')) {
+    fetch('/api/history/clear', { method: 'POST' })
+      .then(function(r){ return r.json(); })
+      .then(function(){
+        loadHistory();
+      })
+      .catch(function(){
+        alert('Failed to clear history. Is the server running?');
+      });
+  }
+}
+
+// ── Settings persistence ───────────────────────────────────────────────────
+function loadSettings() {
+  fetch('/api/settings')
+    .then(function(r){ return r.json(); })
+    .then(function(s){
+      if (s.req_prev !== undefined)     document.getElementById('req-prev').checked = s.req_prev === '1';
+      if (s.req_players !== undefined)  document.getElementById('req-players').checked = s.req_players === '1';
+      if (s.req_pool !== undefined)     document.getElementById('req-pool').checked = s.req_pool === '1';
+      if (s.skip_low_pool !== undefined) document.getElementById('skip-players-low-pool').checked = s.skip_low_pool === '1';
+      updateScript();
+    })
+    .catch(function(){ updateScript(); });
+}
+
+function saveSettings() {
+  var data = {
+    req_prev:    document.getElementById('req-prev').checked ? '1' : '0',
+    req_players: document.getElementById('req-players').checked ? '1' : '0',
+    req_pool:    document.getElementById('req-pool').checked ? '1' : '0',
+    skip_low_pool: document.getElementById('skip-players-low-pool').checked ? '1' : '0'
+  };
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(function(){});
+}
+
+// ── Advisor Script ─────────────────────────────────────────────────────────
+var SCRIPT_TEXT = "";
+
+function updateScript() {
+  var usePrev = document.getElementById('req-prev').checked;
+  var usePlayers = document.getElementById('req-players').checked;
+  var usePool = document.getElementById('req-pool').checked;
+  var skipPlayersLowPool = document.getElementById('skip-players-low-pool').checked;
+
+  saveSettings();
+
+  document.getElementById('card-prev').style.opacity = usePrev ? '1' : '0.3';
+  document.getElementById('card-players').style.opacity = usePlayers ? '1' : '0.3';
+  document.getElementById('card-pool').style.opacity = usePool ? '1' : '0.3';
+
+  SCRIPT_TEXT = '(function(){\n'
+    + '  if(window.__advRunning){clearInterval(window.__advRunning);delete window.__advRunning;}\n'
+    + '  var PREV_MAX=1.80,MIN_P=14,MIN_SOL=0.80,CASHOUT=2.50;\n'
+    + '  var USE_PREV=' + usePrev + ', USE_PLAYERS=' + usePlayers + ', USE_POOL=' + usePool + ', SKIP_P_LOW_POOL=' + skipPlayersLowPool + ';\n'
+    + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0;\n'
+    + '\n'
+    + '  var old=document.getElementById("__adv");if(old)old.remove();\n'
+    + '  var panel=document.createElement("div");\n'
+    + '  panel.id="__adv";\n'
+    + '  Object.assign(panel.style,{position:"fixed",top:"20px",right:"20px",zIndex:"999999",width:"268px",fontFamily:"Inter,system-ui,sans-serif",borderRadius:"16px",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.7)",userSelect:"none"});\n'
+    + '  panel.innerHTML=\'<div id="__ah" style="background:#0d0f1e;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.07);cursor:move"><span style="font-size:13px;font-weight:800;color:#a855f7">\u{1F3AF} Win Suggestion</span><span style="font-size:10px;color:#22d3a5;font-family:monospace" id="__atick">DOM \u25CF</span><span id="__ax" style="cursor:pointer;color:#ffffff;font-size:16px;margin-left:8px">\u2715</span></div><div id="__ab" style="background:#07080f;padding:16px"><div style="text-align:center;margin-bottom:14px"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;margin-bottom:8px">SIGNAL</div><div id="__as" style="font-size:52px;font-weight:900;letter-spacing:-2px;color:#ffffff;line-height:1">WAIT</div><div id="__ah2" style="font-size:11px;color:#fbbf24;margin-top:6px">\u{1F50D} Reading page data...</div></div><div style="background:#0d0f1e;border-radius:10px;padding:12px;font-size:11px;margin-bottom:12px"><div id="__r1" style="margin-bottom:6px;color:#ffffff">\u23F3 Prev crash: waiting...</div><div id="__r2" style="margin-bottom:6px;color:#f43f5e">\u274C Players: 0 &lt; 14</div><div id="__r3" style="color:#f43f5e">\u274C Pool: 0.000 &lt; 0.8 SOL</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:10px"><div style="background:#0d0f1e;border-radius:8px;padding:10px;text-align:center"><div style="color:#ffffff;margin-bottom:3px">ROUNDS</div><div id="__arn" style="font-weight:800;color:#a855f7;font-size:16px">0</div></div><div style="background:#0d0f1e;border-radius:8px;padding:10px;text-align:center"><div style="color:#ffffff;margin-bottom:3px">SIGNALS</div><div id="__asn" style="font-weight:800;color:#22d3a5;font-size:16px">0</div></div></div></div>\';\n'
+    + '  document.body.appendChild(panel);\n'
+    + '\n'
+    + '  document.getElementById("__ax").onclick=function(){panel.remove();clearInterval(window.__advRunning);delete window.__advRunning;};\n'
+    + '  var drag=false,ox=0,oy=0;\n'
+    + '  document.getElementById("__ah").onmousedown=function(e){drag=true;ox=e.clientX-panel.offsetLeft;oy=e.clientY-panel.offsetTop;};\n'
+    + '  document.onmousemove=function(e){if(drag){panel.style.left=(e.clientX-ox)+"px";panel.style.top=(e.clientY-oy)+"px";panel.style.right="auto";}};\n'
+    + '  document.onmouseup=function(){drag=false;};\n'
+    + '\n'
+    + '  function g(id){return document.getElementById(id);}\n'
+    + '\n'
+    + '  function getLiveCashout(){\n'
+    + '    var els=Array.from(document.querySelectorAll("*"));\n'
+    + '    var bestVal=null;\n'
+    + '    for(var i=0;i<els.length;i++){\n'
+    + '      var node=els[i];\n'
+    + '      if(node.children.length>0) continue;\n'
+    + '      var t=(node.textContent||"").trim();\n'
+    + '      var m=t.match(/\\+\\s*(\\d*\\.\\d+|\\d+)/);\n'
+    + '      if(m){\n'
+    + '        if(node.offsetWidth===0&&node.offsetHeight===0) continue;\n'
+    + '        var v=parseFloat(m[1]);\n'
+    + '        if(bestVal===null || v>bestVal){\n'
+    + '          bestVal=v;\n'
+    + '        }\n'
+    + '      }\n'
+    + '    }\n'
+    + '    return bestVal;\n'
+    + '  }\n'
+    + '\n'
+    + '  function render(){\n'
+    + '    var pSkipped = USE_PLAYERS && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
+    + '    var poolSkipped = USE_POOL && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
+    + '    var prevSkipped = USE_PREV && SKIP_P_LOW_POOL && curSOL<0.35 && curP>=7;\n'
+    + '    var r1=USE_PREV ? (prevSkipped ? true : (prevMult!==null&&prevMult<=PREV_MAX)) : true;\n'
+    + '    var r2=USE_PLAYERS ? (pSkipped ? true : curP>=MIN_P) : true;\n'
+    + '    var r3=USE_POOL ? (poolSkipped ? true : curSOL>=MIN_SOL) : true;\n'
+    + '    var bet=r1&&r2&&r3;\n'
+    + '    var sig=g("__as"),hint=g("__ah2"),body=g("__ab");\n'
+    + '    if(bet){\n'
+    + '      sig.textContent="Positive";sig.style.color="#22d3a5";sig.style.textShadow="0 0 30px rgba(34,211,165,.6)";\n'
+    + '      hint.textContent="\uD83D\uDCB0 Cashout at "+CASHOUT+"x \u2014 Positive! GO!";hint.style.color="#22d3a5";hint.style.fontWeight=700;\n'
+    + '      body.style.background="linear-gradient(145deg,#0d1f1a,#07080f)";\n'
+    + '      panel.style.boxShadow="0 8px 40px rgba(34,211,165,.3)";\n'
+    + '      if(sig.dataset.last!=="BET"){sigs++;g("__asn").textContent=sigs;sig.dataset.last="BET";}\n'
+    + '    } else {\n'
+    + '      sig.textContent="WAIT";sig.style.color="#ffffff";sig.style.textShadow="none";\n'
+    + '      hint.textContent="Hold \u2014 watching...";hint.style.color="#ffffff";hint.style.fontWeight=400;\n'
+    + '      body.style.background="#07080f";\n'
+    + '      panel.style.boxShadow="0 8px 40px rgba(0,0,0,.7)";\n'
+    + '      if(sig.dataset.last==="BET"){sigs--;if(sigs<0)sigs=0;g("__asn").textContent=sigs;}\n'
+    + '      sig.dataset.last="WAIT";\n'
+    + '    }\n'
+    + '    if(!USE_PREV){ g("__r1").textContent="➖ Prev: Ignored"; g("__r1").style.color="#ffffff"; } else if(prevSkipped){ g("__r1").textContent="➖ Prev: Skipped (<0.35 SOL & P≥7)"; g("__r1").style.color="#ffffff"; } else {\n'
+    + '      g("__r1").textContent=prevMult===null?"\u23F3 Prev crash: waiting...":(r1?"\u2705":"\u274C")+" Prev: "+prevMult.toFixed(2)+"x "+(r1?"\u2264":">")+" 1.80x";\n'
+    + '      g("__r1").style.color=prevMult===null?"#ffffff":r1?"#22d3a5":"#f43f5e";\n'
+    + '    }\n'
+    + '    if(!USE_PLAYERS){ g("__r2").textContent="➖ Players: Ignored"; g("__r2").style.color="#ffffff"; } else if(pSkipped){ g("__r2").textContent="➖ Players: Skipped (<0.35 SOL & P≥7)"; g("__r2").style.color="#ffffff"; } else {\n'
+    + '      g("__r2").textContent=(r2?"✅":"❌")+" Players: "+curP+(r2?" ≥ ":" < ")+MIN_P;\n'
+    + '      g("__r2").style.color=r2?"#22d3a5":"#f43f5e";\n'
+    + '    }\n'
+    + '    if(!USE_POOL){ g("__r3").textContent="➖ Pool: Ignored"; g("__r3").style.color="#ffffff"; } else if(poolSkipped){ g("__r3").textContent="➖ Pool: Skipped (<0.35 SOL & P≥7)"; g("__r3").style.color="#ffffff"; } else {\n'
+    + '      g("__r3").textContent=(r3?"✅":"❌")+" Pool: "+curSOL.toFixed(3)+" SOL "+(r3?"≥":"<")+" "+MIN_SOL;\n'
+    + '      g("__r3").style.color=r3?"#22d3a5":"#f43f5e";\n'
+    + '    }\n'
+    + '  }\n'
+    + '\n'
+    + '  var tickOn=true;\n'
+    + '  function tick(){tickOn=!tickOn;var t=g("__atick");if(t)t.style.opacity=tickOn?"1":"0.3";}\n'
+    + '\n'
+    + '  function scrape(){\n'
+    + '    tick();\n'
+    + '    var liveCash=getLiveCashout();\n'
+    + '    if(liveCash!==null&&liveCash>maxCashout){maxCashout=liveCash;}\n'
+    + '    var els=Array.from(document.querySelectorAll("*"));\n'
+    + '    var pCount=null,sAmount=null,lCrash=null,found=false;\n'
+    + '    for(var i=0;i<els.length;i++){\n'
+    + '      var node=els[i];\n'
+    + '      if(node.children.length>0) continue;\n'
+    + '      var t=(node.textContent||"").trim();\n'
+    + '      if(!t) continue;\n'
+    + '      if(lCrash===null&&/^\\d+\\.\\d+x$/i.test(t)){\n'
+    + '        try{if(parseFloat(window.getComputedStyle(node).fontSize)<30){lCrash=parseFloat(t);}}catch(e){}\n'
+    + '      }\n'
+    + '      if(pCount===null){\n'
+    + '        var pm=t.match(/^(\\d+)\\s*Playing$/i);\n'
+    + '        if(pm){\n'
+    + '          pCount=parseInt(pm[1]);found=true;\n'
+    + '          for(var j=i+1;j<Math.min(i+20,els.length);j++){\n'
+    + '            if(els[j].children.length>0) continue;\n'
+    + '            var sm=(els[j].textContent||"").trim().match(/^(\\d+\\.\\d{3,4})$/);\n'
+    + '            if(sm){sAmount=parseFloat(sm[1]);break;}\n'
+    + '          }\n'
+    + '        }\n'
+    + '      }\n'
+    + '    }\n'
+    + '    if(pCount!==null){curP=pCount;if(curP>maxP)maxP=curP;}\n'
+    + '    if(sAmount!==null){curSOL=sAmount;if(curSOL>maxSOL)maxSOL=curSOL;}\n'
+    + '    if(lCrash!==null&&prevMult!==lCrash){\n'
+    + '      if(prevMult!==null){\n'
+    + '        var pSkippedB = USE_PLAYERS && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
+    + '        var poolSkippedB = USE_POOL && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
+    + '        var prevSkippedB = USE_PREV && SKIP_P_LOW_POOL && maxSOL<0.35 && maxP>=7;\n'
+    + '        var r1b=USE_PREV ? (prevSkippedB ? true : (prevMult<=PREV_MAX)) : true;\n'
+    + '        var r2b=USE_PLAYERS ? (pSkippedB ? true : maxP>=MIN_P) : true;\n'
+    + '        var r3b=USE_POOL ? (poolSkippedB ? true : maxSOL>=MIN_SOL) : true;\n'
+    + '        var sig2=(r1b&&r2b&&r3b)?"BET":"WAIT";\n'
+    + '        var ok=(sig2==="BET"&&lCrash>=CASHOUT)||(sig2==="WAIT"&&lCrash<CASHOUT);\n'
+    + '        fetch("http://localhost:8000/api/record",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prev_crash:prevMult,players:maxP,pool_sol:maxSOL,signal:sig2,actual_crash:lCrash,success:ok,overall_cashout:maxCashout})}).catch(function(){});\n'
+    + '      }\n'
+    + '      prevMult=lCrash;rounds++;\n'
+    + '      var re=g("__arn");if(re)re.textContent=rounds;\n'
+    + '      maxP=0;maxSOL=0;\n'
+    + '      maxCashout=0;\n'
+    + '      var sigEl=g("__as");if(sigEl)sigEl.dataset.last="WAIT";\n'
+    + '    }\n'
+    + '    if(found||lCrash!==null){var h2=g("__ah2");if(h2){h2.textContent="\u2705 Live \u2014 reading DOM";h2.style.color="#22d3a5";}}\n'
+    + '    render();\n'
+    + '  }\n'
+    + '\n'
+    + '  scrape();\n'
+    + '  window.__advRunning=setInterval(scrape,600);\n'
+    + '  console.log("%c\uD83C\uDFAF Win Suggestion Active!","color:#22d3a5;font-weight:bold;font-size:14px;");\n'
+    + '})();';
+
+  document.getElementById('script-display').textContent = SCRIPT_TEXT;
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+
+function doCopy() {
+  navigator.clipboard.writeText(SCRIPT_TEXT).then(function() {
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ Copied! Paste into Solpump console';
+    btn.classList.add('copied');
+    document.getElementById('toast').classList.add('show');
+    setTimeout(function(){
+      btn.textContent = '📋 Copy Advisor Script to Clipboard';
+      btn.classList.remove('copied');
+      document.getElementById('toast').classList.remove('show');
+    }, 4000);
+  });
+}
+</script>
+</body>
+</html>
