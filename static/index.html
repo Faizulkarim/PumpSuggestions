@@ -177,7 +177,7 @@
                 <span style="color: var(--green); font-weight: bold;">Enable Auto-Bet System</span>
               </label>
               <span style="display: flex; align-items: center; gap: 10px;">💸 <strong>Bet Amount:</strong> <input type="number" id="val-bet-amount" value="0.05" step="0.01" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()"> SOL</span>
-              <span style="display: flex; align-items: center; gap: 10px;">⏳ <strong>Wait before betting:</strong> <input type="number" id="val-bet-delay" value="3.0" step="0.1" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()"> seconds</span>
+              <span style="display: flex; align-items: center; gap: 10px;">⏳ <strong>Wait before betting:</strong> <input type="number" id="val-bet-delay" value="18.0" step="0.1" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()"> seconds</span>
             </div>
           </div>
           <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">Changes are applied automatically to the copied Advisor Script. Unchecking a rule means it will be ignored.</p>
@@ -457,7 +457,7 @@ function updateScript() {
   
   var autoBetEnabled = document.getElementById('auto-bet-enabled').checked;
   var valBetAmount = document.getElementById('val-bet-amount').value || "0.05";
-  var valBetDelay = document.getElementById('val-bet-delay').value || "3.0";
+  var valBetDelay = document.getElementById('val-bet-delay').value || "18.0";
 
   saveSettings();
 
