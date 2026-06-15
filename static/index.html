@@ -169,8 +169,14 @@
               <input type="checkbox" id="skip-players-low-pool" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
               <span><strong>Skip All Rules (Automatic Positive)</strong> if Pool &lt; <input type="number" id="skip-val-pool" value="0.35" step="0.01" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"> SOL &amp; Players ≥ <input type="number" id="skip-val-players" value="7" step="1" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()"></span>
             </label>
-            <div style="font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
+            <div style="font-size: 14px; background: rgba(124,58,237,.08); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15); display: flex; flex-direction: column; gap: 12px;">
               <span style="display: flex; align-items: center; gap: 10px;">🎯 <strong>Target Cashout Multiplier:</strong> <input type="number" id="val-cashout" value="2.50" step="0.01" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()">x</span>
+              <div style="height: 1px; background: var(--b); margin: 4px 0;"></div>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="auto-bet-enabled" onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--green);">
+                <span style="color: var(--green); font-weight: bold;">Enable Auto-Bet System</span>
+              </label>
+              <span style="display: flex; align-items: center; gap: 10px;">💸 <strong>Bet Amount:</strong> <input type="number" id="val-bet-amount" value="0.05" step="0.01" style="width: 70px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 4px; border-radius: 4px; text-align: center;" onchange="updateScript()"> SOL</span>
             </div>
           </div>
           <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">Changes are applied automatically to the copied Advisor Script. Unchecking a rule means it will be ignored.</p>
@@ -400,6 +406,9 @@ function loadSettings() {
       if (s.skip_val_pool !== undefined) document.getElementById('skip-val-pool').value = s.skip_val_pool;
       if (s.skip_val_players !== undefined) document.getElementById('skip-val-players').value = s.skip_val_players;
       
+      if (s.auto_bet_enabled !== undefined) document.getElementById('auto-bet-enabled').checked = s.auto_bet_enabled === '1';
+      if (s.val_bet_amount !== undefined) document.getElementById('val-bet-amount').value = s.val_bet_amount;
+      
       updateScript();
     })
     .catch(function(){ updateScript(); });
@@ -416,7 +425,9 @@ function saveSettings() {
     val_pool:    document.getElementById('val-pool').value,
     val_cashout: document.getElementById('val-cashout').value,
     skip_val_pool: document.getElementById('skip-val-pool').value,
-    skip_val_players: document.getElementById('skip-val-players').value
+    skip_val_players: document.getElementById('skip-val-players').value,
+    auto_bet_enabled: document.getElementById('auto-bet-enabled').checked ? '1' : '0',
+    val_bet_amount: document.getElementById('val-bet-amount').value
   };
   fetch('/api/settings', {
     method: 'POST',
@@ -440,6 +451,9 @@ function updateScript() {
   var valCashout = document.getElementById('val-cashout').value || "2.50";
   var skipValPool = document.getElementById('skip-val-pool').value || "0.35";
   var skipValPlayers = document.getElementById('skip-val-players').value || "7";
+  
+  var autoBetEnabled = document.getElementById('auto-bet-enabled').checked;
+  var valBetAmount = document.getElementById('val-bet-amount').value || "0.05";
 
   saveSettings();
 
@@ -460,6 +474,7 @@ function updateScript() {
     + '  var PREV_MAX=' + valPrev + ',MIN_P=' + valPlayers + ',MIN_SOL=' + valPool + ',CASHOUT=' + valCashout + ';\n'
     + '  var SKIP_VAL_POOL=' + skipValPool + ',SKIP_VAL_P=' + skipValPlayers + ';\n'
     + '  var USE_PREV=' + usePrev + ', USE_PLAYERS=' + usePlayers + ', USE_POOL=' + usePool + ', SKIP_P_LOW_POOL=' + skipPlayersLowPool + ';\n'
+    + '  var AUTO_BET=' + autoBetEnabled + ', BET_AMOUNT=' + valBetAmount + ';\n'
     + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0;\n'
     + '\n'
     + '  var old=document.getElementById("__adv");if(old)old.remove();\n'
@@ -494,6 +509,30 @@ function updateScript() {
     + '      }\n'
     + '    }\n'
     + '    return bestVal;\n'
+    + '  }\n'
+    + '\n'
+    + '  function setReactInputValue(input, value) {\n'
+    + '    if(!input) return;\n'
+    + '    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;\n'
+    + '    if(nativeInputValueSetter) nativeInputValueSetter.call(input, value);\n'
+    + '    else input.value = value;\n'
+    + '    input.dispatchEvent(new Event("input", { bubbles: true }));\n'
+    + '    input.dispatchEvent(new Event("change", { bubbles: true }));\n'
+    + '  }\n'
+    + '\n'
+    + '  function doAutoBet() {\n'
+    + '    if(!AUTO_BET) return;\n'
+    + '    console.log("Auto-betting", BET_AMOUNT, "SOL at", CASHOUT, "x");\n'
+    + '    var inputs = Array.from(document.querySelectorAll("input[type=\'text\'], input[type=\'number\']"));\n'
+    + '    if(inputs.length >= 2) {\n'
+    + '      setReactInputValue(inputs[0], BET_AMOUNT);\n'
+    + '      setReactInputValue(inputs[1], CASHOUT);\n'
+    + '    }\n'
+    + '    var btns = Array.from(document.querySelectorAll("button"));\n'
+    + '    var betBtn = btns.find(function(b){ var t=b.textContent.toLowerCase(); return t.includes("bet")||t.includes("play"); });\n'
+    + '    if(betBtn) {\n'
+    + '      setTimeout(function() { betBtn.click(); }, 150);\n'
+    + '    }\n'
     + '  }\n'
     + '\n'
     + '  function render(){\n'
@@ -575,6 +614,7 @@ function updateScript() {
     + '        var sig2=(r1b&&r2b&&r3b)?"BET":"WAIT";\n'
     + '        var ok=(sig2==="BET"&&lCrash>=CASHOUT)||(sig2==="WAIT"&&lCrash<CASHOUT);\n'
     + '        fetch("http://localhost:8000/api/record",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prev_crash:prevMult,players:maxP,pool_sol:maxSOL,signal:sig2,actual_crash:lCrash,success:ok,overall_cashout:maxCashout})}).catch(function(){});\n'
+    + '        if(sig2==="BET" && AUTO_BET) { doAutoBet(); }\n'
     + '      }\n'
     + '      prevMult=lCrash;rounds++;\n'
     + '      var re=g("__arn");if(re)re.textContent=rounds;\n'
