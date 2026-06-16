@@ -145,14 +145,13 @@
   </div>
 
   <!-- SETTINGS TAB -->
-  <div id="tab-settings" class="tab-pane" style="padding-top: 8px;">
+  <div id="tab-settings" class="tab-pane">
     <div class="steps">
       <div class="step">
-        <div class="step-num">⚙️</div>
-        <div class="step-body">
-          <h3>Algorithm Requirements</h3>
-          <p>Select which rules are mandatory for a Positive signal to be triggered.</p>
-          <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div class="step-body" style="width: 100%; padding: 10px 48px;">
+          <div class="preview-title" style="margin-bottom: 12px;">Settings & Configuration</div>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">Select which rules are mandatory for a Positive signal to be triggered.</p>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: rgba(124,58,237,.08); padding: 16px 20px; border-radius: 8px; border: 1px solid rgba(124,58,237,.15);">
               <input type="checkbox" id="req-prev" checked onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--acc2);">
               <span><strong>Previous Crash</strong> ≤ <input type="number" id="val-prev" value="1.80" step="0.01" style="width: 60px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 6px; border-radius: 4px; text-align: center;" onchange="updateScript()" onclick="event.stopPropagation()">x</span>
@@ -178,6 +177,10 @@
               </label>
               <span style="display: flex; align-items: center; gap: 10px;">💸 <strong>Bet Amount:</strong> <input type="number" id="val-bet-amount" value="0.05" step="0.01" style="width: 80px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 6px; border-radius: 4px; text-align: center;" onchange="updateScript()"> SOL</span>
               <span style="display: flex; align-items: center; gap: 10px;">⏳ <strong>Wait before betting:</strong> <input type="number" id="val-bet-delay" value="18.0" step="0.1" style="width: 80px; background: var(--bg); border: 1px solid var(--b); color: white; padding: 6px; border-radius: 4px; text-align: center;" onchange="updateScript()"> seconds</span>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 4px;">
+                <input type="checkbox" id="ignore-after-loss" onchange="updateScript()" style="width: 18px; height: 18px; accent-color: var(--yellow);">
+                <span style="color: var(--yellow); font-weight: bold; font-size: 13px;">Skip next bet if previous Positive round lost</span>
+              </label>
             </div>
           </div>
           <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">Changes are applied automatically to the copied Advisor Script. Unchecking a rule means it will be ignored.</p>
@@ -187,8 +190,12 @@
   </div>
 
   <!-- HISTORY TAB -->
-  <div id="tab-history" class="tab-pane" style="padding-top: 8px;">
-    <div class="filter-row" style="align-items: center; padding: 16px; background: var(--s); border: 1px solid var(--b); border-radius: 16px;">
+  <div id="tab-history" class="tab-pane">
+    <div class="steps">
+      <div class="step">
+        <div class="step-body" style="width: 100%; padding: 10px 48px;">
+          <div class="preview-title" style="margin-bottom: 16px;">History & Logs</div>
+          <div class="filter-row" style="align-items: center;">
       <button class="flt active" id="flt-all" onclick="applyFilter('all', this)">All Rounds</button>
       <button class="flt" id="flt-win" onclick="applyFilter('win', this)">✅ Winning Positives</button>
       <button class="flt" id="flt-loss" onclick="applyFilter('loss', this)">❌ Losing Positives</button>
@@ -223,7 +230,10 @@
     <div class="pagination-row" id="pagination-controls" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:20px;">
       <button class="flt" id="btn-prev-page" onclick="changePage(-1)">◀ Previous</button>
       <span id="page-indicator" style="font-size:13px; font-weight:600; color:var(--muted)">Page 1 of 1</span>
-      <button class="flt" id="btn-next-page" onclick="changePage(1)">Next ▶</button>
+            <button class="flt" id="btn-next-page" onclick="changePage(1)">Next ▶</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -410,6 +420,7 @@ function loadSettings() {
       if (s.auto_bet_enabled !== undefined) document.getElementById('auto-bet-enabled').checked = s.auto_bet_enabled === '1';
       if (s.val_bet_amount !== undefined) document.getElementById('val-bet-amount').value = s.val_bet_amount;
       if (s.val_bet_delay !== undefined) document.getElementById('val-bet-delay').value = s.val_bet_delay;
+      if (s.ignore_after_loss !== undefined) document.getElementById('ignore-after-loss').checked = s.ignore_after_loss === '1';
       
       updateScript();
     })
@@ -430,7 +441,8 @@ function saveSettings() {
     skip_val_players: document.getElementById('skip-val-players').value,
     auto_bet_enabled: document.getElementById('auto-bet-enabled').checked ? '1' : '0',
     val_bet_amount: document.getElementById('val-bet-amount').value,
-    val_bet_delay: document.getElementById('val-bet-delay').value
+    val_bet_delay: document.getElementById('val-bet-delay').value,
+    ignore_after_loss: document.getElementById('ignore-after-loss').checked ? '1' : '0'
   };
   fetch('/api/settings', {
     method: 'POST',
@@ -458,6 +470,7 @@ function updateScript() {
   var autoBetEnabled = document.getElementById('auto-bet-enabled').checked;
   var valBetAmount = document.getElementById('val-bet-amount').value || "0.05";
   var valBetDelay = document.getElementById('val-bet-delay').value || "18.0";
+  var ignoreAfterLoss = document.getElementById('ignore-after-loss').checked;
 
   saveSettings();
 
@@ -478,8 +491,8 @@ function updateScript() {
     + '  var PREV_MAX=' + valPrev + ',MIN_P=' + valPlayers + ',MIN_SOL=' + valPool + ',CASHOUT=' + valCashout + ';\n'
     + '  var SKIP_VAL_POOL=' + skipValPool + ',SKIP_VAL_P=' + skipValPlayers + ';\n'
     + '  var USE_PREV=' + usePrev + ', USE_PLAYERS=' + usePlayers + ', USE_POOL=' + usePool + ', SKIP_P_LOW_POOL=' + skipPlayersLowPool + ';\n'
-    + '  var AUTO_BET=' + autoBetEnabled + ', BET_AMOUNT=' + valBetAmount + ', BET_DELAY=' + valBetDelay + ';\n'
-    + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0;\n'
+    + '  var AUTO_BET=' + autoBetEnabled + ', BET_AMOUNT=' + valBetAmount + ', BET_DELAY=' + valBetDelay + ', IGNORE_AFTER_LOSS=' + ignoreAfterLoss + ';\n'
+    + '  var prevMult=null,curP=0,curSOL=0,rounds=0,sigs=0,maxP=0,maxSOL=0,maxCashout=0,recentLoss=false;\n'
     + '\n'
     + '  if(AUTO_BET) {\n'
     + '    var startNotif = document.createElement("div");\n'
@@ -532,45 +545,42 @@ function updateScript() {
     + '    input.dispatchEvent(new Event("change", { bubbles: true }));\n'
     + '  }\n'
     + '\n'
-    + '  function doAutoBet() {\n'
-    + '    if(!AUTO_BET) return;\n'
-    + '    console.log("Waiting", BET_DELAY, "seconds before auto-betting...");\n'
-    + '    setTimeout(function() {\n'
-    + '      var inputs = Array.from(document.querySelectorAll("input[type=\'text\'], input[type=\'number\']"));\n'
-    + '      if(inputs.length >= 2) {\n'
-    + '        setReactInputValue(inputs[0], BET_AMOUNT);\n'
-    + '        setReactInputValue(inputs[1], CASHOUT);\n'
+    + '  function doAutoBetClick() {\n'
+    + '    console.log("Auto-betting", BET_AMOUNT, "SOL at", CASHOUT, "x");\n'
+    + '    var inputs = Array.from(document.querySelectorAll("input[type=\'text\'], input[type=\'number\']"));\n'
+    + '    if(inputs.length >= 2) {\n'
+    + '      setReactInputValue(inputs[0], BET_AMOUNT);\n'
+    + '      setReactInputValue(inputs[1], CASHOUT);\n'
+    + '    }\n'
+    + '    var allEls = Array.from(document.querySelectorAll("button, div, a, span"));\n'
+    + '    var betBtn = null;\n'
+    + '    for(var i=allEls.length-1; i>=0; i--) {\n'
+    + '      var el = allEls[i];\n'
+    + '      if(el.children.length > 2) continue;\n'
+    + '      var t = el.textContent.toLowerCase().replace(/\\s+/g, "");\n'
+    + '      if(t.includes("placebet") && !t.includes("terminal")) {\n'
+    + '        betBtn = el;\n'
+    + '        break;\n'
     + '      }\n'
-    + '      var allEls = Array.from(document.querySelectorAll("button, div, a, span"));\n'
-    + '      var betBtn = null;\n'
-    + '      for(var i=allEls.length-1; i>=0; i--) {\n'
-    + '        var el = allEls[i];\n'
-    + '        if(el.children.length > 2) continue;\n'
-    + '        var t = el.textContent.toLowerCase().replace(/\\s+/g, "");\n'
-    + '        if(t.includes("placebet") && !t.includes("terminal")) {\n'
-    + '          betBtn = el;\n'
-    + '          break;\n'
-    + '        }\n'
-    + '      }\n'
-    + '      if(betBtn) {\n'
-    + '        console.log("Found Bet Button element:", betBtn);\n'
-    + '        betBtn.click();\n'
-    + '        betBtn.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));\n'
-    + '        betBtn.dispatchEvent(new PointerEvent("pointerup", {bubbles: true}));\n'
-    + '        var notif = document.createElement("div");\n'
-    + '        notif.textContent = "BET TAPPED!";\n'
-    + '        notif.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22d3a5;color:#000;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-size:24px;pointer-events:none;animation:fadeout 3s forwards;";\n'
-    + '        document.body.appendChild(notif);\n'
-    + '        setTimeout(function(){ if(notif) notif.remove(); }, 3000);\n'
-    + '      } else {\n'
-    + '        console.error("Auto-bet failed: Could not find Place Bet button!");\n'
-    + '        var errNotif = document.createElement("div");\n'
-    + '        errNotif.textContent = "❌ ERROR: Place Bet button not found!";\n'
-    + '        errNotif.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#f43f5e;color:#fff;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-size:20px;pointer-events:none;";\n'
-    + '        document.body.appendChild(errNotif);\n'
-    + '        setTimeout(function(){ if(errNotif) errNotif.remove(); }, 4000);\n'
-    + '      }\n'
-    + '    }, Math.max(150, BET_DELAY * 1000));\n'
+    + '    }\n'
+    + '    if(betBtn) {\n'
+    + '      console.log("Found Bet Button element:", betBtn);\n'
+    + '      betBtn.click();\n'
+    + '      betBtn.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));\n'
+    + '      betBtn.dispatchEvent(new PointerEvent("pointerup", {bubbles: true}));\n'
+    + '      var notif = document.createElement("div");\n'
+    + '      notif.textContent = "BET TAPPED!";\n'
+    + '      notif.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22d3a5;color:#000;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-size:24px;pointer-events:none;animation:fadeout 3s forwards;";\n'
+    + '      document.body.appendChild(notif);\n'
+    + '      setTimeout(function(){ if(notif) notif.remove(); }, 3000);\n'
+    + '    } else {\n'
+    + '      console.error("Auto-bet failed: Could not find Place Bet button!");\n'
+    + '      var errNotif = document.createElement("div");\n'
+    + '      errNotif.textContent = "❌ ERROR: Place Bet button not found!";\n'
+    + '      errNotif.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#f43f5e;color:#fff;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-size:20px;pointer-events:none;";\n'
+    + '      document.body.appendChild(errNotif);\n'
+    + '      setTimeout(function(){ if(errNotif) errNotif.remove(); }, 4000);\n'
+    + '    }\n'
     + '  }\n'
     + '\n'
     + '  function render(){\n'
@@ -581,8 +591,16 @@ function updateScript() {
     + '    var r2=USE_PLAYERS ? (pSkipped ? true : curP>=MIN_P) : true;\n'
     + '    var r3=USE_POOL ? (poolSkipped ? true : curSOL>=MIN_SOL) : true;\n'
     + '    var bet=r1&&r2&&r3;\n'
+    + '    var isSkip = IGNORE_AFTER_LOSS && recentLoss && bet;\n'
     + '    var sig=g("__as"),hint=g("__ah2"),body=g("__ab");\n'
-    + '    if(bet){\n'
+    + '    if(isSkip){\n'
+    + '      sig.textContent="SKIP";sig.style.color="#fbbf24";sig.style.textShadow="none";\n'
+    + '      hint.textContent="\u23ED\uFE0F Skipped because previous Positive lost!";hint.style.color="#fbbf24";hint.style.fontWeight=700;\n'
+    + '      body.style.background="#07080f";\n'
+    + '      panel.style.boxShadow="0 8px 40px rgba(251,191,36,.3)";\n'
+    + '      if(sig.dataset.last==="BET"){sigs--;if(sigs<0)sigs=0;g("__asn").textContent=sigs;}\n'
+    + '      sig.dataset.last="SKIP";\n'
+    + '    } else if(bet){\n'
     + '      sig.textContent="Positive";sig.style.color="#22d3a5";sig.style.textShadow="0 0 30px rgba(34,211,165,.6)";\n'
     + '      hint.textContent="\uD83D\uDCB0 Cashout at "+CASHOUT+"x \u2014 Positive! GO!";hint.style.color="#22d3a5";hint.style.fontWeight=700;\n'
     + '      body.style.background="linear-gradient(145deg,#0d1f1a,#07080f)";\n'
@@ -650,15 +668,42 @@ function updateScript() {
     + '        var r2b=USE_PLAYERS ? (pSkippedB ? true : maxP>=MIN_P) : true;\n'
     + '        var r3b=USE_POOL ? (poolSkippedB ? true : maxSOL>=MIN_SOL) : true;\n'
     + '        var sig2=(r1b&&r2b&&r3b)?"BET":"WAIT";\n'
+    + '        if(IGNORE_AFTER_LOSS && recentLoss) {\n'
+    + '          sig2 = "WAIT";\n'
+    + '          recentLoss = false;\n'
+    + '        } else {\n'
+    + '          if(sig2==="BET" && lCrash<CASHOUT) { recentLoss = true; } else { recentLoss = false; }\n'
+    + '        }\n'
     + '        var ok=(sig2==="BET"&&lCrash>=CASHOUT)||(sig2==="WAIT"&&lCrash<CASHOUT);\n'
     + '        fetch("http://localhost:8000/api/record",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prev_crash:prevMult,players:maxP,pool_sol:maxSOL,signal:sig2,actual_crash:lCrash,success:ok,overall_cashout:maxCashout})}).catch(function(){});\n'
-    + '        if(sig2==="BET" && AUTO_BET) { doAutoBet(); }\n'
     + '      }\n'
     + '      prevMult=lCrash;rounds++;\n'
     + '      var re=g("__arn");if(re)re.textContent=rounds;\n'
     + '      maxP=0;maxSOL=0;\n'
     + '      maxCashout=0;\n'
     + '      var sigEl=g("__as");if(sigEl)sigEl.dataset.last="WAIT";\n'
+    + '      if(AUTO_BET) {\n'
+    + '        console.log("Waiting", BET_DELAY, "seconds for next round lobby...");\n'
+    + '        setTimeout(function() {\n'
+    + '          var lSkip = USE_PLAYERS && SKIP_P_LOW_POOL && curSOL<SKIP_VAL_POOL && curP>=SKIP_VAL_P;\n'
+    + '          var lr1 = USE_PREV ? (lSkip ? true : (prevMult<=PREV_MAX)) : true;\n'
+    + '          var lr2 = USE_PLAYERS ? (lSkip ? true : curP>=MIN_P) : true;\n'
+    + '          var lr3 = USE_POOL ? (lSkip ? true : curSOL>=MIN_SOL) : true;\n'
+    + '          var liveBet = lr1 && lr2 && lr3;\n'
+    + '          if(liveBet) {\n'
+    + '            if(IGNORE_AFTER_LOSS && recentLoss) {\n'
+    + '              console.log("Auto-bet skipped: Previous positive round lost.");\n'
+    + '              var skipNotif = document.createElement("div");\n'
+    + '              skipNotif.textContent = "⏭️ Skipped (Prev Loss)";\n'
+    + '              skipNotif.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fbbf24;color:#000;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-size:20px;pointer-events:none;animation:fadeout 3s forwards;";\n'
+    + '              document.body.appendChild(skipNotif);\n'
+    + '              setTimeout(function(){ if(skipNotif) skipNotif.remove(); }, 3000);\n'
+    + '            } else {\n'
+    + '              doAutoBetClick();\n'
+    + '            }\n'
+    + '          }\n'
+    + '        }, Math.max(150, BET_DELAY * 1000));\n'
+    + '      }\n'
     + '    }\n'
     + '    if(found||lCrash!==null){var h2=g("__ah2");if(h2){h2.textContent="\u2705 Live \u2014 reading DOM";h2.style.color="#22d3a5";}}\n'
     + '    render();\n'
